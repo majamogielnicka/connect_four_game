@@ -18,6 +18,7 @@ func PvP (){
 		} else {
   		fmt.Scan(&players_move)
 		g=g.Drop_piece(players_move)
+		g=g.Switch_player()
 		}
 	}
 }
