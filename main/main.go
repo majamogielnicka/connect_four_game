@@ -4,5 +4,5 @@ import "connect_four/modes"
 
 
 func main() {
-	modes.PvP()
+	modes.AI_vs_P()
 }
