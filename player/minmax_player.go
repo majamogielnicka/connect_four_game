@@ -26,14 +26,9 @@ func (p Min_max_player) algorithm(g *game.Connect4, d int, maximizing bool, alph
 		} else {
 			return -999
 		}
-	}
-
-	if d == 0 {
-		fmt.Println("heurystyka")
-		return 0
-	}
-
-	if maximizing {
+	} else if d == 0 {
+		return Heuristics(g, p.piece)
+	} else if maximizing {
 		val := -999999
 		for _, move := range g.Possible_drops() {
 			new_state := g.Clone()
@@ -80,23 +75,38 @@ func (p Min_max_player) Decide(g game.Connect4) int {
 		return 0
 	}
 
-	moves := make(map[int]int)
+	bestMove := -1
+	bestScore := -999999
 
 	for _, move := range g.Possible_drops() {
 		new_state := g.Clone()
 		new_state = new_state.Drop_piece(move)
 		new_state = new_state.Switch_player()
-		moves[move] = p.algorithm(new_state, p.depth-1, false, -99999, 99999)
-	}
 
-	bestMove := -1
-	bestScore := -999999
-	for move, score := range moves {
+		score := p.algorithm(new_state, p.depth-1, false, -99999, 99999)
+
+		fmt.Println("move:", move, "score:", score)
+
 		if bestMove == -1 || score > bestScore {
 			bestMove = move
 			bestScore = score
 		}
 	}
+	fmt.Println("AI chose", bestMove, "score", bestScore,
+	"reason:",
+	func() string {
+		if bestScore == 999 {
+			return "minimax(win)"
+		}
+		if bestScore == -999 {
+			return "minimax(loss)"
+		}
+		return "heuristic/alpha-beta"
+	}(),
+    )
+
+
+	fmt.Println("chosen move:", bestMove, "with score:", bestScore)
 
 	if bestMove == -1 {
 		return 0

@@ -78,17 +78,16 @@ func (g Connect4) Drop_piece(column int) *Connect4{
 	return &g
 }
 
-func (g Connect4) center_column() []Cell{
+func (g Connect4) Center_column() []Cell{
 	col:=g.width/2
 	center:=make([]Cell, g.height)//slice
 	for row := 0; row < g.height; row++ {
 		center[row] = g.board[row][col]
 	}
-	fmt.Println(center)
 	return center
 }
 
-func (g *Connect4) iter_fours() [][]Cell {
+func (g *Connect4) Iter_fours() [][]Cell {
 	fours := make([][]Cell, 0)
 
 	// horizontal
@@ -143,7 +142,7 @@ func (g *Connect4) check_game_over() bool {
 		return true
 	}
 
-	for _, four := range g.iter_fours() {
+	for _, four := range g.Iter_fours() {
 		if same_value(four, O) {
 			g.Game_over = true
 			g.Winner=O
