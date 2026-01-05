@@ -1,19 +1,27 @@
 package main
 
 import (
-	"connect_four/modes"
 	"fmt"
+	"connect_four/modes"
 )
 
-
 func main() {
-	fmt.Println("-----Choose mode-------\nType 1 for Player vs Player\nType 2 for AI vs Player")
-	var mode_choice int
-	fmt.Scan(&mode_choice)
-	
-	if mode_choice==1{
+	fmt.Println("1 - PvP (console)")
+	fmt.Println("2 - AI vs Player (console)")
+	fmt.Println("3 - PvP (GUI)")
+	fmt.Println("4 - AI vs Player (GUI)")
+
+	var choice int
+	fmt.Scan(&choice)
+
+	switch choice {
+	case 1:
 		modes.PvP()
-	} else if mode_choice == 2{
+	case 2:
 		modes.AI_vs_P()
+	case 3:
+		modes.PvP_GUI()
+	case 4:
+		modes.AI_vs_P_GUI()
 	}
 }

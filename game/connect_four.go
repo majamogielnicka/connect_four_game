@@ -229,3 +229,10 @@ func n_is_in_list (n int, elements []int) bool {
 	}
 	return false
 }
+
+func (g *Connect4) Width() int  { return g.width }
+func (g *Connect4) Height() int { return g.height }
+
+func (g *Connect4) CellAt(row, col int) Cell {
+	return g.board[row][col]
+}
