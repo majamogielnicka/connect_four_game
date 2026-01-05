@@ -30,7 +30,17 @@ func AI_vs_P() {
 		}
 		if g.Who_moves == game.O {
 			fmt.Println("Players move!!!")
-			fmt.Scan(&players_move)
+
+			if _, err := fmt.Scan(&players_move); err != nil {
+				fmt.Println("\nINVALID INPUT, try once again:")
+				continue
+			}
+
+			if players_move > 6 || players_move < 0{
+				fmt.Println("\nINVALID INPUT, try once again: ")
+				continue
+			}
+
 			g = g.Drop_piece(players_move)
 			g = g.Switch_player()
 		} else if g.Who_moves == game.X {
