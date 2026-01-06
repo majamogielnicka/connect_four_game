@@ -3,6 +3,7 @@ package modes
 import (
 	"image/color"
 	"math"
+	"time"
 
 	"connect_four/game"
 	"connect_four/player"
@@ -42,6 +43,12 @@ type GUI struct {
 
 	lastMouse bool
 
+	pendingAIMove     bool
+	waitDrawAfterMove bool
+
+	delay    time.Duration
+	last_move time.Time
+
 	w, h   int
 	boardX int
 	boardY int
@@ -72,6 +79,10 @@ func RunGUI(ui *GUI, title string) {
 func (ui *GUI) Update() error {
 	if ebiten.IsKeyPressed(ebiten.KeyR) {
 		ui.g = game.StartNewGame(ui.g.Width(), ui.g.Height())
+		ui.pendingAIMove = false
+		ui.waitDrawAfterMove = false
+		ui.last_move = time.Time{}
+		ui.lastMouse = false
 		return nil
 	}
 
@@ -79,20 +90,70 @@ func (ui *GUI) Update() error {
 		return nil
 	}
 
-	if ui.tryAIMove() {
+	if ui.waitDrawAfterMove {
 		return nil
 	}
 
-	mouseDown := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
-	if mouseDown && !ui.lastMouse {
-		mx, my := ebiten.CursorPosition()
-		if col, ok := ui.pickColumn(mx, my); ok && ui.isAllowed(col) {
-			ui.g = ui.g.Drop_piece(col)
-			ui.g = ui.g.Switch_player()
+	if ui.delay > 0 && !ui.isHumanTurn() {
+		if ui.last_move.IsZero() {
+			ui.last_move = time.Now()
+			return nil
+		}
+		if time.Since(ui.last_move) < ui.delay {
+			return nil
 		}
 	}
-	ui.lastMouse = mouseDown
+
+	if ui.pendingAIMove {
+		ui.pendingAIMove = false
+		if !ui.g.Game_over {
+			_ = ui.tryAIMove()
+			ui.waitDrawAfterMove = true
+			if ui.delay > 0 {
+				ui.last_move = time.Now()
+			}
+			if !ui.g.Game_over && !ui.isHumanTurn() && ui.delay > 0 {
+				ui.pendingAIMove = true
+			}
+		}
+		return nil
+	}
+
+	if ui.isHumanTurn() {
+		mouseDown := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
+		if mouseDown && !ui.lastMouse {
+			mx, my := ebiten.CursorPosition()
+			if col, ok := ui.pickColumn(mx, my); ok && ui.isAllowed(col) {
+				ui.applyMove(col)
+				if !ui.g.Game_over {
+					ui.waitDrawAfterMove = true
+					if !ui.isHumanTurn() {
+						if ui.delay > 0 {
+							ui.last_move = time.Now()
+						}
+						ui.pendingAIMove = true
+					}
+				}
+			}
+		}
+		ui.lastMouse = mouseDown
+		return nil
+	}
+
+	_ = ui.tryAIMove()
+	ui.waitDrawAfterMove = true
+	if ui.delay > 0 {
+		ui.last_move = time.Now()
+	}
+	if !ui.g.Game_over && !ui.isHumanTurn() && ui.delay > 0 {
+		ui.pendingAIMove = true
+	}
 	return nil
+}
+
+func (ui *GUI) applyMove(col int) {
+	ui.g = ui.g.Drop_piece(col)
+	ui.g = ui.g.Switch_player()
 }
 
 func (ui *GUI) tryAIMove() bool {
@@ -117,8 +178,8 @@ func (ui *GUI) tryAIMove() bool {
 		}
 		move = pd[0]
 	}
-	ui.g = ui.g.Drop_piece(move)
-	ui.g = ui.g.Switch_player()
+
+	ui.applyMove(move)
 	return true
 }
 
@@ -137,7 +198,7 @@ func (ui *GUI) Draw(screen *ebiten.Image) {
 		false,
 	)
 
-	if !ui.g.Game_over && ui.isHumanTurn() {
+	if !ui.g.Game_over && ui.isHumanTurn() && !ui.pendingAIMove {
 		mx, my := ebiten.CursorPosition()
 		if col, ok := ui.pickColumn(mx, my); ok {
 			x := float32(ui.boardX + col*cellSize)
@@ -159,6 +220,10 @@ func (ui *GUI) Draw(screen *ebiten.Image) {
 			drawCircle(screen, cx, cy, ui.radius+2, outlineColor)
 			drawCircle(screen, cx, cy, ui.radius, fill)
 		}
+	}
+
+	if ui.waitDrawAfterMove {
+		ui.waitDrawAfterMove = false
 	}
 }
 
