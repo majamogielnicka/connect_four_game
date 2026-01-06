@@ -13,18 +13,19 @@ type Min_max_player struct {
 func NewMinMaxPlayer(piece game.Cell) *Min_max_player {
 	return &Min_max_player{
 		piece: piece,
-		depth: 5,
+		depth: 6,
 	}
 }
 
 func (p Min_max_player) algorithm(g *game.Connect4, d int, maximizing bool, alpha int, beta int) int {
+	const WIN=1000000000
 	if g.Game_over == true {
 		if g.Winner == p.piece {
-			return 999
+			return WIN+d
 		} else if g.Winner == game.Empty {
 			return 0
 		} else {
-			return -999
+			return -WIN-d
 		}
 	} else if d == 0 {
 		return Heuristics(g, p.piece)
