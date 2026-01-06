@@ -14,14 +14,12 @@ import (
 	"golang.org/x/image/font/basicfont"
 )
 
-
 const (
 	cellSize = 90
 	padding  = 20
 	topBar   = 90
 )
 
-// Pastel theme
 var (
 	bgColor        = color.RGBA{245, 230, 240, 255}
 	boardColor     = color.RGBA{240, 180, 210, 255}
@@ -32,13 +30,16 @@ var (
 	hoverLineColor = color.RGBA{255, 255, 255, 90}
 )
 
-func PvP_GUI()     { runGUI(false) }
-func AI_vs_P_GUI() { runGUI(true) }
+var (
+	topGoXFont  font.Face = basicfont.Face7x13
+	topTextFace           = text.NewGoXFace(topGoXFont)
+)
 
-type guiUI struct {
-	g         *game.Connect4
-	vsAI      bool
-	ai        *player.Min_max_player
+type GUI struct {
+	g       *game.Connect4
+	playerO *player.Min_max_player
+	playerX *player.Min_max_player
+
 	lastMouse bool
 
 	w, h   int
@@ -47,46 +48,30 @@ type guiUI struct {
 	radius int
 }
 
-var (
-	topGoXFont font.Face = basicfont.Face7x13
-	topTextFace          = text.NewGoXFace(topGoXFont)
-)
-
-func runGUI(vsAI bool) {
-	g := game.StartNewGame(7, 6)
-
-	ui := &guiUI{
-		g:      g,
-		vsAI:   vsAI,
-		w:      padding*2 + g.Width()*cellSize,
-		h:      padding*2 + topBar + g.Height()*cellSize,
-		boardX: padding,
-		boardY: padding + topBar,
-		radius: cellSize / 3,
+func NewGUI(g *game.Connect4, playerO, playerX *player.Min_max_player) *GUI {
+	return &GUI{
+		g:       g,
+		playerO: playerO,
+		playerX: playerX,
+		w:       padding*2 + g.Width()*cellSize,
+		h:       padding*2 + topBar + g.Height()*cellSize,
+		boardX:  padding,
+		boardY:  padding + topBar,
+		radius:  cellSize / 3,
 	}
+}
 
-	if vsAI {
-		ui.ai = player.NewMinMaxPlayer(game.X)
-	}
-
+func RunGUI(ui *GUI, title string) {
 	ebiten.SetWindowSize(ui.w, ui.h)
-	if vsAI {
-		ebiten.SetWindowTitle("Connect Four – AI vs Player")
-	} else {
-		ebiten.SetWindowTitle("Connect Four – PvP")
-	}
-
+	ebiten.SetWindowTitle(title)
 	if err := ebiten.RunGame(ui); err != nil {
 		panic(err)
 	}
 }
 
-func (ui *guiUI) Update() error {
+func (ui *GUI) Update() error {
 	if ebiten.IsKeyPressed(ebiten.KeyR) {
-		ui.g = game.StartNewGame(7, 6)
-		if ui.vsAI {
-			ui.ai = player.NewMinMaxPlayer(game.X)
-		}
+		ui.g = game.StartNewGame(ui.g.Width(), ui.g.Height())
 		return nil
 	}
 
@@ -94,37 +79,51 @@ func (ui *guiUI) Update() error {
 		return nil
 	}
 
-	if ui.vsAI && ui.g.Who_moves == game.X {
-		move := ui.ai.Decide(*ui.g)
-		if !ui.isAllowed(move) {
-			pd := ui.g.Possible_drops()
-			if len(pd) == 0 {
-				return nil
-			}
-			move = pd[0]
-		}
-		ui.g = ui.g.Drop_piece(move)
-		ui.g = ui.g.Switch_player()
+	if ui.tryAIMove() {
 		return nil
 	}
 
 	mouseDown := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
 	if mouseDown && !ui.lastMouse {
-		if !ui.vsAI || ui.g.Who_moves == game.O {
-			mx, my := ebiten.CursorPosition()
-			if col, ok := ui.pickColumn(mx, my); ok && ui.isAllowed(col) {
-				ui.g = ui.g.Drop_piece(col)
-				ui.g = ui.g.Switch_player()
-			}
+		mx, my := ebiten.CursorPosition()
+		if col, ok := ui.pickColumn(mx, my); ok && ui.isAllowed(col) {
+			ui.g = ui.g.Drop_piece(col)
+			ui.g = ui.g.Switch_player()
 		}
 	}
 	ui.lastMouse = mouseDown
 	return nil
 }
 
-func (ui *guiUI) Draw(screen *ebiten.Image) {
-	screen.Fill(bgColor)
+func (ui *GUI) tryAIMove() bool {
+	var bot *player.Min_max_player
 
+	switch ui.g.Who_moves {
+	case game.O:
+		bot = ui.playerO
+	case game.X:
+		bot = ui.playerX
+	}
+
+	if bot == nil {
+		return false
+	}
+
+	move := bot.Decide(*ui.g)
+	if !ui.isAllowed(move) {
+		pd := ui.g.Possible_drops()
+		if len(pd) == 0 {
+			return true
+		}
+		move = pd[0]
+	}
+	ui.g = ui.g.Drop_piece(move)
+	ui.g = ui.g.Switch_player()
+	return true
+}
+
+func (ui *GUI) Draw(screen *ebiten.Image) {
+	screen.Fill(bgColor)
 	drawTopText(screen, ui)
 
 	bw := ui.g.Width() * cellSize
@@ -138,7 +137,7 @@ func (ui *guiUI) Draw(screen *ebiten.Image) {
 		false,
 	)
 
-	if !ui.g.Game_over && (!ui.vsAI || ui.g.Who_moves == game.O) {
+	if !ui.g.Game_over && ui.isHumanTurn() {
 		mx, my := ebiten.CursorPosition()
 		if col, ok := ui.pickColumn(mx, my); ok {
 			x := float32(ui.boardX + col*cellSize)
@@ -163,8 +162,17 @@ func (ui *guiUI) Draw(screen *ebiten.Image) {
 	}
 }
 
-var topFont font.Face = basicfont.Face7x13
-func drawTopText(screen *ebiten.Image, ui *guiUI) {
+func (ui *GUI) isHumanTurn() bool {
+	if ui.g.Who_moves == game.O && ui.playerO != nil {
+		return false
+	}
+	if ui.g.Who_moves == game.X && ui.playerX != nil {
+		return false
+	}
+	return true
+}
+
+func drawTopText(screen *ebiten.Image, ui *GUI) {
 	var msg string
 	if ui.g.Game_over {
 		msg = "GAME OVER — WINNER: " + game.Cell_to_string(ui.g.Winner) + "   (R = restart)"
@@ -173,25 +181,19 @@ func drawTopText(screen *ebiten.Image, ui *guiUI) {
 	}
 
 	scale := 2.0
-
-	// szerokość liczymy na GoX foncie
 	textWidth := font.MeasureString(topGoXFont, msg).Ceil()
 	x := float64((ui.w - int(float64(textWidth)*scale)) / 2)
-	y := 28.0
 
 	op := &text.DrawOptions{}
 	op.GeoM.Scale(scale, scale)
-	op.GeoM.Translate(x, y)
+	op.GeoM.Translate(x, 25)
 	op.ColorScale.ScaleWithColor(player2Color)
-
-	// a rysujemy już face'm z text/v2
 	text.Draw(screen, msg, topTextFace, op)
 }
 
+func (ui *GUI) Layout(_, _ int) (int, int) { return ui.w, ui.h }
 
-func (ui *guiUI) Layout(_, _ int) (int, int) { return ui.w, ui.h }
-
-func (ui *guiUI) pickColumn(mx, my int) (int, bool) {
+func (ui *GUI) pickColumn(mx, my int) (int, bool) {
 	bw := ui.g.Width() * cellSize
 	bh := ui.g.Height() * cellSize
 	if mx < ui.boardX || mx >= ui.boardX+bw || my < ui.boardY || my >= ui.boardY+bh {
@@ -200,7 +202,7 @@ func (ui *guiUI) pickColumn(mx, my int) (int, bool) {
 	return (mx - ui.boardX) / cellSize, true
 }
 
-func (ui *guiUI) isAllowed(col int) bool {
+func (ui *GUI) isAllowed(col int) bool {
 	for _, c := range ui.g.Possible_drops() {
 		if c == col {
 			return true

@@ -6,9 +6,9 @@ import (
 	"connect_four/player"
 )
 
-func AI_vs_P() {
+func AI_vs_P(depth int) {
 	g := game.StartNewGame(7, 6)
-	ai := player.NewMinMaxPlayer(game.X)
+	ai := player.NewMinMaxPlayer(game.X, depth)
 
 	fmt.Println("------PLAYER vs AI mode ----------")
 	var start int

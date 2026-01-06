@@ -10,10 +10,10 @@ type Min_max_player struct {
 	piece game.Cell
 }
 
-func NewMinMaxPlayer(piece game.Cell) *Min_max_player {
+func NewMinMaxPlayer(piece game.Cell, depth int) *Min_max_player {
 	return &Min_max_player{
 		piece: piece,
-		depth: 6,
+		depth: depth,
 	}
 }
 
