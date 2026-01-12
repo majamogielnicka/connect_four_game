@@ -3,6 +3,7 @@ package player
 import (
 	"connect_four/game"
 	"fmt"
+	"math"
 )
 
 type Min_max_player struct {
@@ -84,7 +85,7 @@ func (p Min_max_player) Decide(g game.Connect4) int {
 		new_state = new_state.Drop_piece(move)
 		new_state = new_state.Switch_player()
 
-		score := p.algorithm(new_state, p.depth-1, false, -99999, 99999)
+		score := p.algorithm(new_state, p.depth-1, false, math.MinInt/2, math.MaxInt/2)
 
 		fmt.Println("move:", move, "score:", score)
 
@@ -96,10 +97,11 @@ func (p Min_max_player) Decide(g game.Connect4) int {
 	fmt.Println("AI chose", bestMove, "score", bestScore,
 	"reason:",
 	func() string {
-		if bestScore == 999 {
+		const win = 1_000_000_000
+		if bestScore >= win {
 			return "minimax(win)"
 		}
-		if bestScore == -999 {
+		if bestScore <= win {
 			return "minimax(loss)"
 		}
 		return "heuristic/alpha-beta"

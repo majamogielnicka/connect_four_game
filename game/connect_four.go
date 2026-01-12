@@ -55,12 +55,10 @@ func (g Connect4) Possible_drops () []int{
 
 func (g Connect4) Drop_piece(column int) *Connect4{
 	if g.Game_over {
-		//TODO game exception
 		fmt.Println("GAME OVER")
 		return &g
 	}
 	if n_is_in_list(column, g.Possible_drops())==false {
-		//TODO game exception
 		fmt.Print("Invalid move")
 		return &g
 	}
