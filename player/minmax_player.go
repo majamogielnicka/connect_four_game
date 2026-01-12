@@ -7,7 +7,7 @@ import (
 )
 
 const WIN = 1_000_000_000
-const INF = math.MaxInt / 4
+const INF = math.MaxInt / 2
 
 type Min_max_player struct {
 	depth int
@@ -79,8 +79,12 @@ func (p Min_max_player) Decide(g game.Connect4) int {
 		return 0
 	}
 
-	bestMove := -1
-	bestScore := -INF
+	type ms struct {
+		move  int
+		score int
+	}
+
+	var all []ms
 
 	for _, move := range g.Possible_drops() {
 		new_state := g.Clone()
@@ -88,29 +92,48 @@ func (p Min_max_player) Decide(g game.Connect4) int {
 		new_state = new_state.Switch_player()
 
 		score := p.algorithm(new_state, p.depth-1, false, math.MinInt/2, math.MaxInt/2)
+		all = append(all, ms{move: move, score: score})
+	}
 
-		fmt.Println("move:", move, "score:", score)
-
-		if bestMove == -1 || score > bestScore {
-			bestMove = move
-			bestScore = score
+	// policz bestScore
+	bestScore := -INF
+	for _, x := range all {
+		if x.score > bestScore {
+			bestScore = x.score
 		}
 	}
-	fmt.Println("AI chose", bestMove, "score", bestScore,
-	"reason:",
-	func() string {
-		if bestScore >= WIN {
-			return "minimax(win)"
-		}
-		if bestScore <= WIN {
-			return "minimax(loss)"
-		}
-		return "heuristic/alpha-beta"
-	}(),
-    )
 
+	// sprawdź czy bestScore powtarza się co najmniej 2 razy
+	ties := 0
+	for _, x := range all {
+		if x.score == bestScore {
+			ties++
+		}
+	}
 
-	fmt.Println("chosen move:", bestMove, "with score:", bestScore)
+	// jeśli się powtarza, faktycznie aktualizuj score wszystkich kolumn o +3 +2 +1...
+	if ties > 1 {
+		weights := []int{0, 1, 2, 3, 2, 1, 0}
+		for i := range all {
+			all[i].score += weights[all[i].move]
+		}
+	}
+
+	// wybierz najlepszy po WSZYSTKICH obliczeniach
+	bestMove := -1
+	bestScore = -INF
+	for _, x := range all {
+		if bestMove == -1 || x.score > bestScore {
+			bestMove = x.move
+			bestScore = x.score
+		}
+	}
+
+	// debug na sam koniec: print wyników po wszystkich obliczeniach
+	for _, x := range all {
+		fmt.Println("move:", x.move, "score:", x.score)
+	}
+	fmt.Println("AI chose", bestMove, "score", bestScore)
 
 	if bestMove == -1 {
 		return 0
