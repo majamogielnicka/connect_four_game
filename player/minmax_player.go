@@ -6,6 +6,9 @@ import (
 	"math"
 )
 
+const WIN = 1_000_000_000
+const INF = math.MaxInt / 4
+
 type Min_max_player struct {
 	depth int
 	piece game.Cell
@@ -19,7 +22,6 @@ func NewMinMaxPlayer(piece game.Cell, depth int) *Min_max_player {
 }
 
 func (p Min_max_player) algorithm(g *game.Connect4, d int, maximizing bool, alpha int, beta int) int {
-	const WIN=1000000000
 	if g.Game_over == true {
 		if g.Winner == p.piece {
 			return WIN+d
@@ -31,7 +33,7 @@ func (p Min_max_player) algorithm(g *game.Connect4, d int, maximizing bool, alph
 	} else if d == 0 {
 		return Heuristics(g, p.piece)
 	} else if maximizing {
-		val := -999999
+		val := -INF
 		for _, move := range g.Possible_drops() {
 			new_state := g.Clone()
 			new_state = new_state.Drop_piece(move)
@@ -50,7 +52,7 @@ func (p Min_max_player) algorithm(g *game.Connect4, d int, maximizing bool, alph
 		}
 		return val
 	} else {
-		val := 999999
+		val := INF
 		for _, move := range g.Possible_drops() {
 			new_state := g.Clone()
 			new_state = new_state.Drop_piece(move)
@@ -78,7 +80,7 @@ func (p Min_max_player) Decide(g game.Connect4) int {
 	}
 
 	bestMove := -1
-	bestScore := -999999
+	bestScore := -INF
 
 	for _, move := range g.Possible_drops() {
 		new_state := g.Clone()
@@ -97,11 +99,10 @@ func (p Min_max_player) Decide(g game.Connect4) int {
 	fmt.Println("AI chose", bestMove, "score", bestScore,
 	"reason:",
 	func() string {
-		const win = 1_000_000_000
-		if bestScore >= win {
+		if bestScore >= WIN {
 			return "minimax(win)"
 		}
-		if bestScore <= win {
+		if bestScore <= WIN {
 			return "minimax(loss)"
 		}
 		return "heuristic/alpha-beta"

@@ -55,6 +55,3 @@ func main() {
 		modes.AI_vs_AI_GUI(depthX, depthO)
 	}
 }
-
-//TODO dodac zeby ai rozpatrzalo tylko dostepne kolumny - przyspiezy program
-//dodac mniej zaawansowana heurystyke
