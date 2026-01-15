@@ -240,7 +240,7 @@ func (ui *GUI) isHumanTurn() bool {
 func drawTopText(screen *ebiten.Image, ui *GUI) {
 	var msg string
 	if ui.g.Game_over {
-		msg = "GAME OVER — WINNER: " + game.Cell_to_string(ui.g.Winner) + "   (R = restart)"
+		msg = "GAME OVER WINNER IS: " + game.Cell_to_string(ui.g.Winner) + "   (R = restart)"
 	} else {
 		msg = "TURN: " + game.Cell_to_string(ui.g.Who_moves)
 	}

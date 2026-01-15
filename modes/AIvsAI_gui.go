@@ -12,7 +12,7 @@ func AI_vs_AI_GUI(depthX, depthO int) {
 	aiO := player.NewMinMaxPlayer(game.O, depthO)
 
 	ui := NewGUI(g, aiO, aiX)
-	ui.delay = 3 * time.Second
+	ui.delay = 1 * time.Second
 	ui.last_move = time.Now()
 
 	RunGUI(ui, "Connect Four – AI vs AI")

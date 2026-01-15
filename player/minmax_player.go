@@ -95,7 +95,6 @@ func (p Min_max_player) Decide(g game.Connect4) int {
 		all = append(all, ms{move: move, score: score})
 	}
 
-	// policz bestScore
 	bestScore := -INF
 	for _, x := range all {
 		if x.score > bestScore {
@@ -103,7 +102,6 @@ func (p Min_max_player) Decide(g game.Connect4) int {
 		}
 	}
 
-	// sprawdź czy bestScore powtarza się co najmniej 2 razy
 	ties := 0
 	for _, x := range all {
 		if x.score == bestScore {
@@ -111,7 +109,6 @@ func (p Min_max_player) Decide(g game.Connect4) int {
 		}
 	}
 
-	// jeśli się powtarza, faktycznie aktualizuj score wszystkich kolumn o +3 +2 +1...
 	if ties > 1 {
 		weights := []int{0, 1, 2, 3, 2, 1, 0}
 		for i := range all {
@@ -119,7 +116,6 @@ func (p Min_max_player) Decide(g game.Connect4) int {
 		}
 	}
 
-	// wybierz najlepszy po WSZYSTKICH obliczeniach
 	bestMove := -1
 	bestScore = -INF
 	for _, x := range all {
@@ -128,12 +124,11 @@ func (p Min_max_player) Decide(g game.Connect4) int {
 			bestScore = x.score
 		}
 	}
-
-	// debug na sam koniec: print wyników po wszystkich obliczeniach
-	for _, x := range all {
-		fmt.Println("move:", x.move, "score:", x.score)
-	}
-	fmt.Println("AI chose", bestMove, "score", bestScore)
+	
+	//for _, x := range all {
+	//	fmt.Println("move:", x.move, "score:", x.score)
+	//}
+	//fmt.Println("AI chose", bestMove, "score", bestScore)
 
 	if bestMove == -1 {
 		return 0
